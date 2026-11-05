@@ -40,7 +40,7 @@ Skip a track, pause the music, or follow the lyrics without switching windows. T
 
 **Requirements:** macOS 14 or later. You'll need a MacBook with a Touch Bar to use the hardware controls. Tested on Apple Silicon; Intel builds are not yet verified.
 
-A public download has not been published yet. Once an installer is available:
+Download the **Apple Silicon beta** from [GitHub Releases](https://github.com/alifnrhman/touchtrack/releases). The DMG is attached after the release build finishes.
 
 1. Open the Touchtrack `.dmg`.
 2. Drag **Touchtrack** into **Applications**.

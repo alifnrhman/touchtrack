@@ -1,0 +1,63 @@
+name: Release DMG
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  dmg:
+    name: Build Apple Silicon DMG
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "14.0"
+      CARGO_TERM_COLOR: always
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - run: npm ci
+      - name: Build frontend and test JavaScript
+        run: npm test
+      - name: Test Rust
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --release
+      - name: Test native features
+        run: |
+          npm run test:lyrics
+          npm run test:adblock
+          npm run test:global
+      - name: Build unsigned DMG
+        run: npm run dmg -- --ci -- --locked
+      - name: Upload DMG and checksum to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        working-directory: src-tauri/target/release/bundle/dmg
+        run: |
+          for image in *.dmg; do
+            shasum -a 256 "$image" > "$image.sha256"
+            gh release upload "$RELEASE_TAG" "$image" "$image.sha256"
+          done
