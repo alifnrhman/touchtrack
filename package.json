@@ -1,0 +1,24 @@
+{
+  "name": "touchtrack",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "tauri": "tauri",
+    "app": "tauri build --bundles app",
+    "dmg": "tauri build --bundles app,dmg",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "test:lyrics": "sh scripts/test-lyrics.sh",
+    "test:adblock": "sh scripts/test-adblock.sh",
+    "test:global": "sh scripts/test-global-touchbar.sh"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "typescript": "^5",
+    "vite": "^6"
+  },
+  "description": "YouTube Music for macOS with native Touch Bar controls and synced karaoke lyrics.",
+  "license": "MIT"
+}

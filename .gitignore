@@ -1,0 +1,33 @@
+node_modules/
+dist/
+src-tauri/target/
+.DS_Store
+
+# Local build archives and generated Tauri schemas
+.trash-builds/
+src-tauri/gen/schemas/
+*.app/
+*.dmg
+*.app.tar.gz
+
+# Local environment and signing credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+.aws/
+.codex/
+.agents/
+
+# Local diagnostics and editor state
+*.log
+*.crash
+*.ips
+.idea/
+.vscode/
+*.swp
