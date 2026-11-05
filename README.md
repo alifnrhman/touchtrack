@@ -16,6 +16,18 @@
 
 Skip a track, pause the music, or follow the lyrics without switching windows. Touchtrack brings YouTube Music to a desktop app and puts the controls on your MacBook's Touch Bar.
 
+<p align="center">
+  <img src="assets/screenshots/touchbar-lyrics.png" alt="Touchtrack on a real Touch Bar: playback controls and synced lyrics" width="100%" />
+  <br />
+  <sub>Lyrics mode — follow the current line while the music plays.</sub>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/touchbar-controls.png" alt="Touchtrack on a real Touch Bar: track title, artist, playback controls, and seek progress" width="100%" />
+  <br />
+  <sub>Track mode — song details, playback controls, and seek progress.</sub>
+</p>
+
 ## What you get
 
 - **Music at your fingertips.** Play/pause, previous, next, artwork, and seek controls.
