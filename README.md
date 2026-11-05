@@ -1,5 +1,4 @@
 <p align="center">
-  <a href="https://github.com/alifnrhman/touchtrack/actions/workflows/ci.yml"><img src="https://github.com/alifnrhman/touchtrack/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="assets/branding/touchtrack-logo.png" alt="Touchtrack" width="420" />
 </p>
 
@@ -8,6 +7,7 @@
 <p align="center">YouTube Music with native Touch Bar controls and karaoke lyrics, right on your keyboard.</p>
 
 <p align="center">
+  <a href="https://github.com/alifnrhman/touchtrack/actions/workflows/ci.yml"><img src="https://github.com/alifnrhman/touchtrack/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-111111?logo=apple&logoColor=white" alt="macOS 14+" />
   <img src="https://img.shields.io/badge/Apple_Silicon-tested-FF4248" alt="Tested on Apple Silicon" />
   <img src="https://img.shields.io/badge/status-experimental-FF4248" alt="Experimental" />
