@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 func check(_ condition: @autoclosure () -> Bool, _ label: String) { if !condition() { fatalError(label) } }
 let input = "[00:02.50]Second line\n[00:00.00]First line\n[00:04.00][00:08.00]Repeated line\n[00:06.00]\n[artist:Example]"
 let lines = LyricsDocument.parse(input)
@@ -54,3 +55,25 @@ check(sung.sweep(at: 1.25)?.fraction == 0.25, "backward seek rewinds fill")
 check(lineOnly.lines[0].sweep(at: 2) == nil, "no artificial sweep without segment timestamps")
 check(sung.sweep(at: .nan) == nil, "invalid sweep clock rejected")
 print("10 smooth karaoke sweep checks passed")
+
+// Response headers are untrusted and must not overflow DispatchTime deadlines.
+check(LyricsRetryDelay.seconds("1e308", fallback: 2) == 300, "clamps huge numeric retry delay")
+check(LyricsRetryDelay.seconds("Infinity", fallback: 2) == 2, "rejects infinite retry delay")
+check(LyricsRetryDelay.seconds("NaN", fallback: 2) == 2, "rejects NaN retry delay")
+check(LyricsRetryDelay.seconds("-999", fallback: 2) == 1, "floors negative retry delay")
+check(LyricsRetryDelay.seconds(" 12 ", fallback: 2) == 12, "accepts bounded numeric retry delay")
+check(LyricsRetryDelay.seconds("invalid", fallback: .infinity) == 60, "safe invalid fallback")
+check(LyricsRetryDelay.seconds("Wed, 01 Jan 2098 00:00:00 GMT", fallback: 2, now: Date(timeIntervalSince1970: 0)) == 300, "clamps distant retry date")
+check(LyricsRetryDelay.seconds(nil, fallback: 9999) == 300, "clamps fallback")
+check(!ArtworkImage.dimensionsAllowed(width: 8193, height: 1), "rejects huge image edge")
+check(!ArtworkImage.dimensionsAllowed(width: 5000, height: 5000), "rejects image pixel bomb")
+check(!ArtworkImage.dimensionsAllowed(width: .nan, height: 128), "rejects invalid dimensions")
+check(!ArtworkImage.dimensionsAllowed(width: 0, height: 128), "rejects zero dimensions")
+check(ArtworkImage.dimensionsAllowed(width: 1024, height: 1024), "allows ordinary artwork")
+check(ArtworkImage.decode(Data("not an image".utf8)) == nil, "rejects malformed image")
+check(ArtworkImage.decode(Data(repeating: 0, count: 2_000_001)) == nil, "rejects oversized artwork")
+let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 512, pixelsHigh: 256, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+let png = bitmap.representation(using: .png, properties: [:])!
+let thumbnail = ArtworkImage.decode(png)!
+check(thumbnail.size.width <= 128 && thumbnail.size.height <= 128, "decodes bounded real PNG thumbnail")
+print("16 retry-header and artwork safety checks passed")

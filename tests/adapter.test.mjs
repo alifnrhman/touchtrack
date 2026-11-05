@@ -2,12 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-function fixture(origin = 'https://music.youtube.com') {
+function fixture(origin = 'https://music.youtube.com', artwork = null) {
  const sent = [], listeners = new Map(), clicked = [];
  const media = { duration: 120, playbackRate: 1, currentTime: 5, paused: true, ended: false, seekable: { length: 1 }, play: async () => { media.paused = false; }, pause: () => {media.paused = true;}, addEventListener: (e,f) => listeners.set(e,f), removeEventListener: e => listeners.delete(e) };
  let active = media; let ad = false;
  const control = name => ({ hasAttribute: () => false, getAttribute: () => null, click: () => clicked.push(name) });
- const document = { querySelector(selector) { if(selector === 'video, audio') return active; if(selector === '.ad-showing') return ad ? {} : null; if(selector.includes('.title')) return { textContent: ' Track ' }; if(selector.includes('browse/')) return { textContent: 'Album' }; if(selector.includes('.byline')) return { textContent: 'Artist' }; if(selector.endsWith('img')) return null; return control(selector); } };
+ const document = { querySelector(selector) { if(selector === 'video, audio') return active; if(selector === '.ad-showing') return ad ? {} : null; if(selector.includes('.title')) return { textContent: ' Track ' }; if(selector.includes('browse/')) return { textContent: 'Album' }; if(selector.includes('.byline')) return { textContent: 'Artist' }; if(selector.endsWith('img')) return artwork ? {src: artwork} : null; return control(selector); } };
  const window = { webkit: { messageHandlers: { player: { postMessage: s => sent.push(s) } } }, setTimeout: fn => { fn(); return 1; }, addEventListener() {} }; window.top = window;
  vm.runInNewContext(readFileSync('dist/player-adapter.js','utf8'), { window, document, location: { origin }, performance: { now: () => 2000 }, MutationObserver: class { observe() {} } });
  return { window, media, sent, clicked, setAd: value => {ad = value;}, removeMedia: () => {active=null;}, listeners };
@@ -30,4 +30,9 @@ test('reports advertisements separately from song playback', async () => {
 
 test('captures album and playback rate for rich-lyrics matching', () => {
  const f=fixture(); assert.equal(f.sent[0].album,'Album'); assert.equal(f.sent[0].playbackRate,1);
+});
+
+test('bounds artwork URLs before sending state across the native bridge', () => {
+ assert.equal(fixture('https://music.youtube.com', 'https://i.ytimg.com/a').sent[0].artworkUrl, 'https://i.ytimg.com/a');
+ assert.equal(fixture('https://music.youtube.com', 'data:image/png;base64,' + 'a'.repeat(100000)).sent[0].artworkUrl, null);
 });

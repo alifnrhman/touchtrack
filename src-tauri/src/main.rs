@@ -75,41 +75,66 @@ pub unsafe extern "C" fn ytm_command(json: *const c_char) {
         ytm_dispatch(json);
     }
 }
+// Remote pages must match an exact HTTPS origin, including port and credentials.
+fn secure_origin(url: &tauri::Url, hosts: &[&str]) -> bool {
+    url.scheme() == "https"
+        && url.username().is_empty()
+        && url.password().is_none()
+        && url.port_or_known_default() == Some(443)
+        && url.host_str().is_some_and(|host| hosts.contains(&host))
+}
+fn music_navigation_allowed(url: &tauri::Url, development: bool) -> bool {
+    if !url.username().is_empty() || url.password().is_some() {
+        return false;
+    }
+    secure_origin(url, &["music.youtube.com"])
+        || (url.scheme() == "tauri" && url.host_str() == Some("localhost") && url.port().is_none())
+        || (url.scheme() == "http"
+            && url.host_str() == Some("tauri.localhost")
+            && url.port_or_known_default() == Some(80))
+        || (development
+            && url.scheme() == "http"
+            && url.host_str() == Some("localhost")
+            && url.port() == Some(5173))
+}
+
 // Keep login navigation in a separate, unmodified WebView within this app.
 fn is_login_destination(url: &tauri::Url) -> bool {
-    url.scheme() == "https"
-        && url.username().is_empty()
-        && url.password().is_none()
-        && url.port_or_known_default() == Some(443)
-        && match url.host_str() {
-            Some(
-                "accounts.google.com"
-                | "accounts.youtube.com"
-                | "consent.google.com"
-                | "consent.youtube.com",
-            ) => true,
-            Some("music.youtube.com" | "www.youtube.com") => {
-                matches!(url.path(), "/signin" | "/signin/" | "/ServiceLogin")
-            }
-            _ => false,
+    secure_origin(
+        url,
+        &[
+            "accounts.google.com",
+            "accounts.youtube.com",
+            "consent.google.com",
+            "consent.youtube.com",
+            "music.youtube.com",
+            "www.youtube.com",
+        ],
+    ) && match url.host_str() {
+        Some(
+            "accounts.google.com"
+            | "accounts.youtube.com"
+            | "consent.google.com"
+            | "consent.youtube.com",
+        ) => true,
+        Some("music.youtube.com" | "www.youtube.com") => {
+            matches!(url.path(), "/signin" | "/signin/" | "/ServiceLogin")
         }
+        _ => false,
+    }
 }
 fn auth_navigation_allowed(url: &tauri::Url) -> bool {
-    url.scheme() == "https"
-        && url.username().is_empty()
-        && url.password().is_none()
-        && url.port_or_known_default() == Some(443)
-        && matches!(
-            url.host_str(),
-            Some(
-                "accounts.google.com"
-                    | "accounts.youtube.com"
-                    | "consent.google.com"
-                    | "consent.youtube.com"
-                    | "music.youtube.com"
-                    | "www.youtube.com"
-            )
-        )
+    secure_origin(
+        url,
+        &[
+            "accounts.google.com",
+            "accounts.youtube.com",
+            "consent.google.com",
+            "consent.youtube.com",
+            "music.youtube.com",
+            "www.youtube.com",
+        ],
+    )
 }
 
 fn open_sign_in(app: &tauri::AppHandle) {
@@ -126,10 +151,10 @@ fn open_sign_in(app: &tauri::AppHandle) {
             // Both windows use WebKit's persistent default data store. Do not attach
             // the music adapter, content blockers, or music compatibility user agent here.
             .on_navigation(auth_navigation_allowed)
+            .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
             .on_page_load(|window, page| {
                 if page.event() == tauri::webview::PageLoadEvent::Finished
-                    && page.url().scheme() == "https"
-                    && page.url().host_str() == Some("music.youtube.com") {
+                    && secure_origin(page.url(), &["music.youtube.com"]) {
                     let _ = window.close();
                 }
             })
@@ -228,13 +253,7 @@ fn main() {
                     open_sign_in(&navigation_app);
                     return false;
                 }
-                u.scheme() == "tauri"
-                    || (cfg!(debug_assertions)
-                        && u.scheme() == "http"
-                        && u.host_str() == Some("localhost")
-                        && u.port() == Some(5173))
-                    || (u.scheme() == "http" && u.host_str() == Some("tauri.localhost"))
-                    || (u.scheme() == "https" && u.host_str() == Some("music.youtube.com"))
+                music_navigation_allowed(u, cfg!(debug_assertions))
             })
             .title("Touchtrack")
             .inner_size(1100., 760.)
@@ -250,6 +269,57 @@ fn main() {
 #[cfg(test)]
 mod auth_tests {
     use super::*;
+    #[test]
+    fn rejects_origin_confusion_and_limits_local_navigation() {
+        for raw in [
+            "https://music.youtube.com:444/",
+            "https://user:pass@music.youtube.com/",
+            "https://music.youtube.com.evil.test/",
+            "http://music.youtube.com/",
+            "tauri://evil.test/",
+            "tauri://localhost:444/",
+            "file:///tmp/page.html",
+            "javascript:alert(1)",
+            "http://tauri.localhost:444/",
+        ] {
+            assert!(
+                !music_navigation_allowed(&raw.parse().unwrap(), false),
+                "{raw}"
+            );
+        }
+        for raw in [
+            "https://music.youtube.com/watch?v=test",
+            "tauri://localhost/index.html",
+            "http://tauri.localhost/",
+        ] {
+            assert!(
+                music_navigation_allowed(&raw.parse().unwrap(), false),
+                "{raw}"
+            );
+        }
+        let dev = "http://localhost:5173/".parse().unwrap();
+        assert!(!music_navigation_allowed(&dev, false));
+        assert!(music_navigation_allowed(&dev, true));
+        assert!(!music_navigation_allowed(
+            &"http://localhost:5174/".parse().unwrap(),
+            true
+        ));
+    }
+    #[test]
+    fn auth_window_only_allows_explicit_https_origins() {
+        assert!(auth_navigation_allowed(
+            &"https://accounts.google.com/ServiceLogin".parse().unwrap()
+        ));
+        for raw in [
+            "https://accounts.google.com:444/",
+            "https://user@accounts.google.com/",
+            "https://accounts.google.com.evil.test/",
+            "https://evil.test/",
+            "http://accounts.google.com/",
+        ] {
+            assert!(!auth_navigation_allowed(&raw.parse().unwrap()), "{raw}");
+        }
+    }
     #[test]
     fn routes_login_but_keeps_music_and_untrusted_urls_out() {
         for url in [

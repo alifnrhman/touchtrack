@@ -20,6 +20,7 @@ fn main() {
             swift_target,
             "native/touchbar/TouchBar.swift",
             "native/touchbar/Lyrics.swift",
+            "native/touchbar/NativeSafety.swift",
             "native/touchbar/TTMLLyrics.swift",
             "native/touchbar/AdBlocker.swift",
             "native/touchbar/GlobalTouchBar.swift",
@@ -31,6 +32,7 @@ fn main() {
     assert!(status.success(), "Swift build failed");
     println!("cargo:rerun-if-changed=native/touchbar/TouchBar.swift");
     println!("cargo:rerun-if-changed=native/touchbar/Lyrics.swift");
+    println!("cargo:rerun-if-changed=native/touchbar/NativeSafety.swift");
     println!("cargo:rerun-if-changed=native/touchbar/TTMLLyrics.swift");
     println!("cargo:rerun-if-changed=native/touchbar/AdBlocker.swift");
     println!("cargo:rerun-if-changed=../dist/player-adapter.js");
@@ -38,7 +40,7 @@ fn main() {
     println!("cargo:rustc-link-search=native=/usr/lib/swift");
     println!("cargo:rustc-link-lib=static=TouchBar");
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
-    for f in ["AppKit", "WebKit", "Foundation", "CoreText"] {
+    for f in ["AppKit", "WebKit", "Foundation", "CoreText", "ImageIO"] {
         println!("cargo:rustc-link-lib=framework={f}");
     }
     let sdk = Command::new("xcrun")

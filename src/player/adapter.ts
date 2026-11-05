@@ -17,12 +17,13 @@ if (location.origin === 'https://music.youtube.com' && window.top === window) {
       if (media) { events.forEach(e => media!.addEventListener(e, update)); media.addEventListener('timeupdate', progress); }
     }
     const duration = finite(media?.duration);
+    const artwork = document.querySelector<HTMLImageElement>('ytmusic-player-bar img')?.src;
     const state: PlayerState = {
       title: text('ytmusic-player-bar .title'),
       artist: text('ytmusic-player-bar .byline a') || text('ytmusic-player-bar .byline'),
       album: text('ytmusic-player-bar .byline a[href*="browse/"]'),
       playbackRate: finite(media?.playbackRate) || 1,
-      artworkUrl: document.querySelector<HTMLImageElement>('ytmusic-player-bar img')?.src || null,
+      artworkUrl: artwork && artwork.length <= 4096 ? artwork : null,
       duration, currentTime: finite(media?.currentTime),
       isAd: !!document.querySelector('.ad-showing'),
       isPlaying: !!media && !media.paused && !media.ended,

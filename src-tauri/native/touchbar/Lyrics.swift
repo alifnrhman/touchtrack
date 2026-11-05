@@ -190,10 +190,7 @@ private final class LyricsRequest: NSObject, URLSessionDataDelegate, @unchecked 
         display()
     }
     private func delay(_ response: HTTPURLResponse?, fallback: Double) -> Double {
-        guard let raw = response?.value(forHTTPHeaderField: "Retry-After") else { return fallback }
-        if let seconds = Double(raw), seconds.isFinite { return max(0, seconds) }
-        let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = TimeZone(secondsFromGMT: 0); formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
-        return formatter.date(from: raw).map { max(0, $0.timeIntervalSinceNow) } ?? fallback
+        LyricsRetryDelay.seconds(response?.value(forHTTPHeaderField: "Retry-After"), fallback: fallback)
     }
     private func fetch(_ target: URL, cacheKey: String, token: Int, attempt: Int) {
                 self.lastRequest = Date()

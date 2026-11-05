@@ -281,7 +281,7 @@ private final class Artwork: NSObject, URLSessionDataDelegate, @unchecked Sendab
                 let loader = Artwork(); artwork = loader
                 loader.load(url) { [weak self] data in
                     DispatchQueue.main.async { [weak self] in
-                        guard let self, self.generation == current, let data, let icon = NSImage(data: data) else { return }
+                        guard let self, self.generation == current, let data, let icon = ArtworkImage.decode(data) else { return }
                         self.image.image = icon
                     }
                 }
