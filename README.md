@@ -1,4 +1,5 @@
 <p align="center">
+  <a href="https://github.com/alifnrhman/touchtrack/actions/workflows/ci.yml"><img src="https://github.com/alifnrhman/touchtrack/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="assets/branding/touchtrack-logo.png" alt="Touchtrack" width="420" />
 </p>
 
@@ -102,6 +103,8 @@ npm run test:global
 ```
 
 Run `npm test` before Cargo tests so the embedded frontend artifacts exist. Native checks require macOS; fixture tests do not replace physical Touch Bar testing.
+
+GitHub Actions runs these checks and packages the macOS app on pushes to `main` and pull requests. CI does not test Google sign-in, live ad removal, or physical Touch Bar interaction.
 
 ### Read more
 
